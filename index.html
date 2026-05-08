@@ -922,55 +922,116 @@
         }
 
         // 导出Excel
+        // 导出Excel - 新格式：每项清单输出三行
+        // 导出Excel - 新格式：每项清单输出三行
         function exportExcel() {
             if (processedData.length === 0) {
                 showStatus('没有数据可导出！', 'error');
                 return;
             }
 
-            // 构建工作表数据
+            // 构建工作表数据 - 15列格式
+            // A:序号 | B:项目名称 | C:类型 | D:长度(m) | E:宽度(m) | F:周长mm | G:面积㎡ | H:工程量 | I:项目编码 | J:类型 | K:名称 | L:项目特征 | M:单位 | N:工程量 | O:主材单价
             const wsData = [
-                ['序号', '清单编码', '项目名称', '长度(m)', '宽度(m)', '周长(mm)', '面积(㎡)', '定额编码', '定额名称', '主材价格', '数量', '项目特征']
+                ['序号', '项目名称', '类型', '长度(m)', '宽度(m)', '周长mm', '面积㎡', '工程量', '项目编码', '类型', '名称', '项目特征', '单位', '工程量', '主材单价']
             ];
 
-            processedData.forEach(item => {
+            let unpricedIndex = 1; // 未计价材序号，从1开始
+
+            processedData.forEach((item, idx) => {
+                const rowNum = idx + 2; // 数据起始行（1是表头），当前清单行行号
+                const itemIndex = item.index; // 清单序号
+                const quotaCode = item.quotaCode; // 定额编码
+                const price = item.price; // 主材价格
+                const itemType = item.category || item.name; // 类型（除尺寸外的名称）
+
+                // ========== 第1行：清单行 ==========
+                // 15列: A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, L=11, M=12, N=13, O=14
                 wsData.push([
-                    item.index,
-                    item.listCode,
-                    item.name,
-                    item.length.toFixed(3),
-                    item.width.toFixed(3),
-                    Math.round(item.perimeter),
-                    item.area.toFixed(4),
-                    item.quotaCode,
-                    item.quotaName,
-                    item.price.toFixed(2),
-                    item.quantity,
-                    item.features  // 项目特征使用换行符\n
+                    itemIndex,                           // [0] A: 序号
+                    item.name,                           // [1] B: 项目名称
+                    itemType,                            // [2] C: 类型（除尺寸外的名称）
+                    item.length.toFixed(3),             // [3] D: 长度
+                    item.width.toFixed(3),              // [4] E: 宽度
+                    Math.round(item.perimeter),          // [5] F: 周长
+                    item.area.toFixed(4),               // [6] G: 面积
+                    item.quantity,                       // [7] H: 工程量
+                    item.listCode,                       // [8] I: 项目编码（风口030703007，风阀030703001）
+                    '清单行',                            // [9] J: 类型（固定）
+                    item.name,                           // [10] K: 名称
+                    item.features,                       // [11] L: 项目特征
+                    '个',                                // [12] M: 单位
+                    '=H' + rowNum,                       // [13] N: =H{row}（引用H列工程量）
+                    price.toFixed(2)                    // [14] O: 主材价格
+                ]);
+
+                // ========== 第2行：定额行 ==========
+                // 索引位置: [0]=A, [1-7]=B-H(留空), [8]=I(定额编码), [9]=J(定额行), [10]=K(名称), [11]=L(留空), [12]=M(留空), [13]=N(公式), [14]=O(留空)
+                wsData.push([
+                    itemIndex + '.1',                    // [0] A: 序号.1
+                    '',                                  // [1] B: 留空
+                    '',                                  // [2] C: 留空
+                    '',                                  // [3] D: 留空
+                    '',                                  // [4] E: 留空
+                    '',                                  // [5] F: 留空
+                    '',                                  // [6] G: 留空
+                    '',                                  // [7] H: 留空
+                    quotaCode,                          // [8] I: 定额编码（如9-82）
+                    '定额行',                            // [9] J: 类型（固定）
+                    item.name,                           // [10] K: 名称
+                    '',                                  // [11] L: 留空
+                    '',                                  // [12] M: 留空
+                    '=M' + (rowNum + 2),                 // [13] N: =M{row+2}（引用第三行M列）
+                    ''                                   // [14] O: 留空
+                ]);
+
+                // ========== 第3行：未计价材行 ==========
+                // 索引位置: [0]=A, [1-7]=B-H(留空), [8]=I(未计价材编号), [9]=J(未计价材行), [10]=K(名称), [11]=L(留空), [12]=M(留空), [13]=N(公式), [14]=O(主材价格)
+                const unpricedCode = 'Z00741-' + String(unpricedIndex).padStart(3, '0');
+                unpricedIndex++;
+                wsData.push([
+                    itemIndex + '.2',                    // [0] A: 序号.2
+                    '',                                  // [1] B: 留空
+                    '',                                  // [2] C: 留空
+                    '',                                  // [3] D: 留空
+                    '',                                  // [4] E: 留空
+                    '',                                  // [5] F: 留空
+                    '',                                  // [6] G: 留空
+                    '',                                  // [7] H: 留空
+                    unpricedCode,                        // [8] I: 未计价材编号（Z00741-001, Z00741-002...）
+                    '未计价材行',                         // [9] J: 类型（固定）
+                    item.name,                           // [10] K: 名称（引用K列名称）
+                    '',                                  // [11] L: 留空
+                    '',                                  // [12] M: 留空
+                    '=N' + (rowNum + 1),                 // [13] N: =N{row+1}（引用第二行N列）
+                    price.toFixed(2)                     // [14] O: 主材价格
                 ]);
             });
 
             // 添加统计行
             const totalPrice = processedData.reduce((sum, d) => sum + d.price, 0);
             wsData.push([]);
-            wsData.push(['合计', '', '', '', '', '', '', '', '', totalPrice.toFixed(2), '', '']);
+            wsData.push(['合计', '', '', '', '', '', '', '', '', '', '', '', '', '', totalPrice.toFixed(2)]);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
             // 设置列宽
             ws['!cols'] = [
-                { wch: 6 },   // 序号
-                { wch: 12 },  // 清单编码
-                { wch: 40 },  // 项目名称
-                { wch: 10 },  // 长度
-                { wch: 10 },  // 宽度
-                { wch: 10 },  // 周长
-                { wch: 10 },  // 面积
-                { wch: 10 },  // 定额编码
-                { wch: 35 },  // 定额名称
-                { wch: 12 },  // 主材价格
-                { wch: 8 },   // 数量
-                { wch: 60 }   // 项目特征
+                { wch: 8 },    // A: 序号
+                { wch: 30 },  // B: 项目名称
+                { wch: 15 },  // C: 类型
+                { wch: 10 },  // D: 长度
+                { wch: 10 },  // E: 宽度
+                { wch: 10 },  // F: 周长
+                { wch: 10 },  // G: 面积
+                { wch: 8 },   // H: 工程量
+                { wch: 12 },  // I: 项目编码
+                { wch: 10 },  // J: 类型
+                { wch: 25 },  // K: 名称
+                { wch: 50 },  // L: 项目特征
+                { wch: 8 },   // M: 单位
+                { wch: 10 },  // N: 工程量
+                { wch: 12 }   // O: 主材单价
             ];
 
             const wb = XLSX.utils.book_new();
