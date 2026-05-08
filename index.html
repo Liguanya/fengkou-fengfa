@@ -966,7 +966,7 @@
                     item.name,                           // [10] K: 名称
                     item.features,                       // [11] L: 项目特征
                     '个',                                // [12] M: 单位
-                    '=H' + rowNum,                       // [13] N: =H{row}（引用H列工程量）
+                    item.quantity,                        // [13] N: 直接填H列工程量数值
                     price.toFixed(2)                    // [14] O: 主材价格
                 ]);
 
@@ -986,7 +986,7 @@
                     item.name,                           // [10] K: 名称
                     '',                                  // [11] L: 留空
                     '',                                  // [12] M: 留空
-                    '=M' + (rowNum + 2),                 // [13] N: =M{row+2}（引用第三行M列）
+                    item.quantity,                        // [13] N: 直接填H列工程量数值
                     ''                                   // [14] O: 留空
                 ]);
 
@@ -1008,7 +1008,7 @@
                     item.name,                           // [10] K: 名称（引用K列名称）
                     '',                                  // [11] L: 留空
                     '',                                  // [12] M: 留空
-                    '=N' + (rowNum + 1),                 // [13] N: =N{row+1}（引用第二行N列）
+                    item.quantity,                        // [13] N: 直接填H列工程量数值
                     price.toFixed(2)                     // [14] O: 主材价格
                 ]);
             });
