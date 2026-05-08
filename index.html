@@ -630,7 +630,18 @@
             }
 
             // 风阀类定额（9-63~9-85）
-            if (category.includes('防火阀') || category.includes('排烟') || category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀') || category.includes('斜插板阀')) {
+            // ========== 防火阀类定额（优先级最高，必须放在最前面！）==========
+            // 只要category包含"防火阀"，直接套用防火阀定额
+            if (category.includes('防火阀') || category === '防火阀') {
+                if (p <= 2200) return { code: '9-82', name: '风管防火阀安装（周长2200mm以内）' };
+                if (p <= 3600) return { code: '9-83', name: '风管防火阀安装（周长3600mm以内）' };
+                if (p <= 5400) return { code: '9-84', name: '风管防火阀安装（周长5400mm以内）' };
+                return { code: '9-85', name: '风管防火阀安装（周长8000mm以内）' };
+            }
+            // ========== 防火阀类定额结束 ==========
+
+            // 风阀类定额（排除防火阀后）
+            if (category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀') || category.includes('斜插板阀')) {
                 // 风管蝶阀（9-63~9-67）
                 if (category === '蝶阀' || category === '电动蝶阀') {
                     if (p <= 800) return { code: '9-63', name: '风管蝶阀安装（周长800mm以内）' };
@@ -656,7 +667,7 @@
                     return { code: '9-75', name: '密闭式斜插板阀安装（周长3200mm以内）' };
                 }
 
-                // 对开多叶调节阀（9-76~9-81）
+                // 对开多叶调节阀（9-76~9-81）— 注意：只有名称明确包含"对开多叶调节阀"才套用
                 if (category === '对开多叶调节阀' || category === '电动对开多叶调节阀') {
                     if (p <= 2800) return { code: '9-76', name: '对开多叶调节阀安装（周长2800mm以内）' };
                     if (p <= 4000) return { code: '9-77', name: '对开多叶调节阀安装（周长4000mm以内）' };
@@ -674,14 +685,6 @@
                     if (p <= 6500) return { code: '9-79', name: '三通多叶调节阀安装（周长6500mm以内）' };
                     if (p <= 8000) return { code: '9-80', name: '三通多叶调节阀安装（周长8000mm以内）' };
                     return { code: '9-81', name: '三通多叶调节阀安装（周长10000mm以内）' };
-                }
-
-                // 防火阀（9-82~9-85）
-                if (category.includes('防火阀') || category.includes('排烟防火阀')) {
-                    if (p <= 2200) return { code: '9-82', name: '防火阀安装（周长2200mm以内）' };
-                    if (p <= 3600) return { code: '9-83', name: '防火阀安装（周长3600mm以内）' };
-                    if (p <= 5400) return { code: '9-84', name: '防火阀安装（周长5400mm以内）' };
-                    return { code: '9-85', name: '防火阀安装（周长8000mm以内）' };
                 }
 
                 // 默认风阀
