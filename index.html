@@ -559,73 +559,111 @@
         function applyQuota(perimeter, category, isSquareVent, isRoundVent) {
             const p = perimeter; // 周长(mm)
 
-            // 方形散流器
+            // 方形散流器（9-102~9-104）
             if (isSquareVent) {
-                if (p <= 900) return { code: '9-102', name: '方形散流器安装（周长900mm以内）' };
-                if (p <= 1500) return { code: '9-103', name: '方形散流器安装（周长1500mm以内）' };
-                return { code: '9-104', name: '方形散流器安装（周长1500mm以外）' };
+                if (p <= 500) return { code: '9-102', name: '方形散流器安装（周长500mm以内）' };
+                if (p <= 1000) return { code: '9-103', name: '方形散流器安装（周长1000mm以内）' };
+                return { code: '9-104', name: '方形散流器安装（周长2000mm以内）' };
             }
 
-            // 圆形散流器
+            // 圆形散流器（9-105~9-107）- 按直径判断
             if (isRoundVent) {
-                if (p <= 900) return { code: '9-105', name: '圆形散流器安装（周长900mm以内）' };
-                if (p <= 1500) return { code: '9-106', name: '圆形散流器安装（周长1500mm以内）' };
-                return { code: '9-107', name: '圆形散流器安装（周长1500mm以外）' };
+                // 圆形按直径判断（周长=π*直径，所以直径=周长/π）
+                if (p <= 628) return { code: '9-105', name: '圆形散流器安装（直径200mm以内）' };
+                if (p <= 1131) return { code: '9-106', name: '圆形散流器安装（直径360mm以内）' };
+                return { code: '9-107', name: '圆形散流器安装（直径500mm以内）' };
             }
 
-            // 风阀类定额（9-57~9-85）
-            if (category.includes('防火阀') || category.includes('排烟') || category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀')) {
-                // 风管蝶阀
+            // 带调节阀百叶风口（9-122~9-127）
+            if (category === '带调节阀百叶风口') {
+                if (p <= 800) return { code: '9-122', name: '带调节阀百叶风口安装（周长800mm以内）' };
+                if (p <= 1200) return { code: '9-123', name: '带调节阀百叶风口安装（周长1200mm以内）' };
+                if (p <= 1800) return { code: '9-124', name: '带调节阀百叶风口安装（周长1800mm以内）' };
+                if (p <= 2400) return { code: '9-125', name: '带调节阀百叶风口安装（周长2400mm以内）' };
+                if (p <= 3200) return { code: '9-126', name: '带调节阀百叶风口安装（周长3200mm以内）' };
+                return { code: '9-127', name: '带调节阀百叶风口安装（周长4000mm以内）' };
+            }
+
+            // 板式排烟口（9-140~9-146）
+            if (category === '板式排烟口') {
+                if (p <= 800) return { code: '9-140', name: '板式排烟口安装（周长800mm以内）' };
+                if (p <= 1280) return { code: '9-141', name: '板式排烟口安装（周长1280mm以内）' };
+                if (p <= 1600) return { code: '9-142', name: '板式排烟口安装（周长1600mm以内）' };
+                if (p <= 2000) return { code: '9-143', name: '板式排烟口安装（周长2000mm以内）' };
+                if (p <= 2800) return { code: '9-144', name: '板式排烟口安装（周长2800mm以内）' };
+                if (p <= 3200) return { code: '9-145', name: '板式排烟口安装（周长3200mm以内）' };
+                return { code: '9-146', name: '板式排烟口安装（周长4000mm以内）' };
+            }
+
+            // 多叶送风口/排烟口（9-147~9-154）
+            if (category === '多叶送风口' || category === '多叶排烟口') {
+                if (p <= 1200) return { code: '9-147', name: '多叶送/排烟口安装（周长1200mm以内）' };
+                if (p <= 2000) return { code: '9-148', name: '多叶送/排烟口安装（周长2000mm以内）' };
+                if (p <= 2600) return { code: '9-149', name: '多叶送/排烟口安装（周长2600mm以内）' };
+                if (p <= 3200) return { code: '9-150', name: '多叶送/排烟口安装（周长3200mm以内）' };
+                if (p <= 3800) return { code: '9-151', name: '多叶送/排烟口安装（周长3800mm以内）' };
+                if (p <= 4400) return { code: '9-152', name: '多叶送/排烟口安装（周长4400mm以内）' };
+                if (p <= 4800) return { code: '9-153', name: '多叶送/排烟口安装（周长4800mm以内）' };
+                return { code: '9-154', name: '多叶送/排烟口安装（周长5200mm以内）' };
+            }
+
+            // 风阀类定额（9-63~9-85）
+            if (category.includes('防火阀') || category.includes('排烟') || category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀') || category.includes('斜插板阀')) {
+                // 风管蝶阀（9-63~9-67）
                 if (category === '蝶阀' || category === '电动蝶阀') {
                     if (p <= 800) return { code: '9-63', name: '风管蝶阀安装（周长800mm以内）' };
-                    if (p <= 1500) return { code: '9-64', name: '风管蝶阀安装（周长1500mm以内）' };
-                    if (p <= 2500) return { code: '9-65', name: '风管蝶阀安装（周长2500mm以内）' };
-                    if (p <= 4000) return { code: '9-66', name: '风管蝶阀安装（周长4000mm以内）' };
-                    return { code: '9-67', name: '风管蝶阀安装（周长4000mm以外）' };
+                    if (p <= 1600) return { code: '9-64', name: '风管蝶阀安装（周长1600mm以内）' };
+                    if (p <= 2400) return { code: '9-65', name: '风管蝶阀安装（周长2400mm以内）' };
+                    if (p <= 3200) return { code: '9-66', name: '风管蝶阀安装（周长3200mm以内）' };
+                    return { code: '9-67', name: '风管蝶阀安装（周长4000mm以内）' };
                 }
 
-                // 止回阀
+                // 止回阀（9-68~9-71）
                 if (category === '止回阀') {
                     if (p <= 800) return { code: '9-68', name: '止回阀安装（周长800mm以内）' };
-                    if (p <= 1500) return { code: '9-69', name: '止回阀安装（周长1500mm以内）' };
-                    if (p <= 2500) return { code: '9-70', name: '止回阀安装（周长2500mm以内）' };
-                    if (p <= 4000) return { code: '9-71', name: '止回阀安装（周长4000mm以内）' };
-                    return { code: '9-72', name: '止回阀安装（周长4000mm以外）' };
+                    if (p <= 1200) return { code: '9-69', name: '止回阀安装（周长1200mm以内）' };
+                    if (p <= 2000) return { code: '9-70', name: '止回阀安装（周长2000mm以内）' };
+                    return { code: '9-71', name: '止回阀安装（周长3200mm以内）' };
                 }
 
-                // 对开多叶调节阀
+                // 密闭式斜插板阀（9-72~9-75）
+                if (category === '密闭式斜插板阀' || category === '斜插板阀') {
+                    if (p <= 800) return { code: '9-72', name: '密闭式斜插板阀安装（周长800mm以内）' };
+                    if (p <= 1200) return { code: '9-73', name: '密闭式斜插板阀安装（周长1200mm以内）' };
+                    if (p <= 2000) return { code: '9-74', name: '密闭式斜插板阀安装（周长2000mm以内）' };
+                    return { code: '9-75', name: '密闭式斜插板阀安装（周长3200mm以内）' };
+                }
+
+                // 对开多叶调节阀（9-76~9-81）
                 if (category === '对开多叶调节阀' || category === '电动对开多叶调节阀') {
-                    if (p <= 1200) return { code: '9-73', name: '对开多叶调节阀安装（周长1200mm以内）' };
-                    if (p <= 2000) return { code: '9-74', name: '对开多叶调节阀安装（周长2000mm以内）' };
-                    if (p <= 3000) return { code: '9-75', name: '对开多叶调节阀安装（周长3000mm以内）' };
-                    if (p <= 4000) return { code: '9-76', name: '对开多叶调节阀安装（周长4000mm以内）' };
-                    return { code: '9-77', name: '对开多叶调节阀安装（周长4000mm以外）' };
+                    if (p <= 2800) return { code: '9-76', name: '对开多叶调节阀安装（周长2800mm以内）' };
+                    if (p <= 4000) return { code: '9-77', name: '对开多叶调节阀安装（周长4000mm以内）' };
+                    if (p <= 5200) return { code: '9-78', name: '对开多叶调节阀安装（周长5200mm以内）' };
+                    if (p <= 6500) return { code: '9-79', name: '对开多叶调节阀安装（周长6500mm以内）' };
+                    if (p <= 8000) return { code: '9-80', name: '对开多叶调节阀安装（周长8000mm以内）' };
+                    return { code: '9-81', name: '对开多叶调节阀安装（周长10000mm以内）' };
                 }
 
-                // 三通多叶调节阀
+                // 三通多叶调节阀（使用9-76~9-81）
                 if (category === '三通多叶调节阀') {
-                    if (p <= 1200) return { code: '9-78', name: '三通多叶调节阀安装（周长1200mm以内）' };
-                    if (p <= 2000) return { code: '9-79', name: '三通多叶调节阀安装（周长2000mm以内）' };
-                    if (p <= 3000) return { code: '9-80', name: '三通多叶调节阀安装（周长3000mm以内）' };
-                    return { code: '9-81', name: '三通多叶调节阀安装（周长3000mm以外）' };
+                    if (p <= 2800) return { code: '9-76', name: '三通多叶调节阀安装（周长2800mm以内）' };
+                    if (p <= 4000) return { code: '9-77', name: '三通多叶调节阀安装（周长4000mm以内）' };
+                    if (p <= 5200) return { code: '9-78', name: '三通多叶调节阀安装（周长5200mm以内）' };
+                    if (p <= 6500) return { code: '9-79', name: '三通多叶调节阀安装（周长6500mm以内）' };
+                    if (p <= 8000) return { code: '9-80', name: '三通多叶调节阀安装（周长8000mm以内）' };
+                    return { code: '9-81', name: '三通多叶调节阀安装（周长10000mm以内）' };
                 }
 
-                // 防火阀（70度、280度）
+                // 防火阀（9-82~9-85）
                 if (category.includes('防火阀') || category.includes('排烟防火阀')) {
-                    if (p <= 800) return { code: '9-57', name: '防火阀安装（周长800mm以内）' };
-                    if (p <= 1500) return { code: '9-58', name: '防火阀安装（周长1500mm以内）' };
-                    if (p <= 2500) return { code: '9-59', name: '防火阀安装（周长2500mm以内）' };
-                    if (p <= 4000) return { code: '9-60', name: '防火阀安装（周长4000mm以内）' };
-                    return { code: '9-61', name: '防火阀安装（周长4000mm以外）' };
-                }
-
-                // 电动风阀（作为防火阀的电动款）
-                if (category.includes('电动')) {
-                    return { code: '9-62', name: '电动风阀安装' };
+                    if (p <= 2200) return { code: '9-82', name: '防火阀安装（周长2200mm以内）' };
+                    if (p <= 3600) return { code: '9-83', name: '防火阀安装（周长3600mm以内）' };
+                    if (p <= 5400) return { code: '9-84', name: '防火阀安装（周长5400mm以内）' };
+                    return { code: '9-85', name: '防火阀安装（周长8000mm以内）' };
                 }
 
                 // 默认风阀
-                return { code: '9-85', name: '风阀安装' };
+                return { code: '9-85', name: '风阀安装（周长8000mm以内）' };
             }
 
             // 风口类定额（9-86~9-93按周长套用）
@@ -638,8 +676,6 @@
             if (p <= 6000) return { code: '9-92', name: '百叶风口安装（周长6000mm以内）' };
             return { code: '9-93', name: '百叶风口安装（周长7000mm以内）' };
         }
-
-        // 计算主材价
         function calculatePrice(area, category, isElectric) {
             const G = area; // 面积(㎡)
 
