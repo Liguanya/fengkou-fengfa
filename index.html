@@ -413,24 +413,32 @@
             
             // 预先检查关键词（用于默认逻辑判断）
             const hasFireValve = fullName.includes('防火阀');
-
-            // 280度排烟防火阀
-            if (fullName.includes('280度') && (fullName.includes('防火阀') || fullName.includes('排烟'))) {
-                return { 
-                    category: fullName.includes('电动') ? '电动280排烟防火阀' : '280排烟防火阀', 
+            const hasElectric = fullName.includes('电动');
+            
+            // ========== 防火阀类（优先级最高，单独处理）==========
+            // 只要包含"防火阀"关键词，统一识别为防火阀类（风阀）
+            if (hasFireValve) {
+                let category = '防火阀'; // 默认基础防火阀
+                
+                // 判断温度类型
+                if (fullName.includes('280度') || fullName.includes('280°')) {
+                    category = '280排烟防火阀';
+                } else if (fullName.includes('70度') || fullName.includes('70°')) {
+                    category = '70度防火阀';
+                }
+                
+                // 判断是否电动
+                if (hasElectric) {
+                    category = '电动' + category;
+                }
+                
+                return {
+                    category: category,
                     listCode: FENGFA_CODE,
-                    isElectric: fullName.includes('电动')
+                    isElectric: hasElectric
                 };
             }
-
-            // 70度防火阀
-            if (fullName.includes('70度') && fullName.includes('防火阀')) {
-                return { 
-                    category: fullName.includes('电动') ? '电动70度防火阀' : '70度防火阀', 
-                    listCode: FENGFA_CODE,
-                    isElectric: fullName.includes('电动')
-                };
-            }
+            // ========== 防火阀类结束 ==========
 
             // 多叶送风口/排烟口
             if (fullName.includes('多叶送风口') || fullName.includes('多叶排烟口')) {
@@ -510,8 +518,19 @@
                 return { category: '自垂式百叶风口', listCode: FENGKOU_CODE, isElectric: false };
             }
 
-            // 默认按风阀处理（排除已识别的防火阀，避免"阀"字都识别成蝶阀）
+            // 默认按风阀处理（排除防火阀后，按名称关键词匹配）
             if (fullName.includes('阀') && !hasFireValve) {
+                // 依次检查各类风阀
+                if (fullName.includes('蝶阀')) {
+                    return { category: hasElectric ? '电动蝶阀' : '蝶阀', listCode: FENGFA_CODE, isElectric: hasElectric };
+                }
+                if (fullName.includes('止回阀')) {
+                    return { category: '止回阀', listCode: FENGFA_CODE, isElectric: false };
+                }
+                if (fullName.includes('调节阀')) {
+                    return { category: hasElectric ? '电动对开多叶调节阀' : '对开多叶调节阀', listCode: FENGFA_CODE, isElectric: hasElectric };
+                }
+                // 通用风阀
                 return { category: '蝶阀', listCode: FENGFA_CODE, isElectric: false };
             }
 
