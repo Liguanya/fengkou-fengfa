@@ -553,12 +553,17 @@
 
             // 散流器带调节阀
             if (fullName.includes('散流器') && fullName.includes('调节阀')) {
-                return { category: '散流器带调节阀', listCode: FENGKOU_CODE, isElectric: false };
+                const isSquare = !fullName.includes('圆形');
+                const isRound = fullName.includes('圆形');
+                return { category: '散流器带调节阀', listCode: FENGKOU_CODE, isElectric: false, isSquareVent: isSquare, isRoundVent: isRound };
             }
 
             // 散流器
             if (fullName.includes('散流器')) {
-                return { category: '散流器', listCode: FENGKOU_CODE, isElectric: false };
+                // 判断是方形还是圆形散流器
+                const isSquare = !fullName.includes('圆形');
+                const isRound = fullName.includes('圆形');
+                return { category: '散流器', listCode: FENGKOU_CODE, isElectric: false, isSquareVent: isSquare, isRoundVent: isRound };
             }
 
             // 自垂式百叶风口
