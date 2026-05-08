@@ -276,6 +276,8 @@
                             <th>定额编码</th>
                             <th>定额名称</th>
                             <th>主材价格</th>
+                            <th>数量</th>
+                            <th>项目特征</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -356,6 +358,35 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // 提取数量函数
+        function extractQuantity(row) {
+            // 可能的数量列名
+            const qtyKeys = ['数量', 'qty', 'num', '数量num', 'NUM', 'QTY', 'Num', 'Qty', '件数', '计量单位', '单位'];
+            
+            for (const key of qtyKeys) {
+                if (row[key] !== undefined && row[key] !== '' && row[key] !== null) {
+                    const val = parseFloat(row[key]);
+                    if (!isNaN(val) && val > 0) {
+                        return val;
+                    }
+                }
+            }
+            
+            // 尝试模糊匹配
+            for (const key of Object.keys(row)) {
+                const k = key.toLowerCase();
+                if (k.includes('数量') || k === 'qty' || k === 'num' || k === 'n') {
+                    const val = parseFloat(row[key]);
+                    if (!isNaN(val) && val > 0) {
+                        return val;
+                    }
+                }
+            }
+            
+            // 默认返回1
+            return 1;
+        }
+
         // 数据处理函数
         function processData(data) {
             const results = [];
@@ -384,6 +415,20 @@
                 // 计算主材价
                 const price = calculatePrice(area, typeInfo.category, typeInfo.isElectric);
 
+                // 读取数量
+                const quantity = extractQuantity(row);
+                
+                // 构建规格型号字符串
+                let specStr = '';
+                if (dimensions.diameter > 0) {
+                    specStr = 'φ' + Math.round(dimensions.diameter) + 'mm';
+                } else {
+                    specStr = Math.round(dimensions.length * 1000) + '*' + Math.round(dimensions.width * 1000) + 'mm';
+                }
+                
+                // 构建项目特征
+                const features = '名称: ' + name + '\n规格型号: ' + specStr + '\n其他: 满足招标图纸、招标文件、技术标准及相关图集规范要求';
+                
                 results.push({
                     index: index++,
                     listCode: typeInfo.listCode,
@@ -394,7 +439,9 @@
                     area: area,
                     quotaCode: quota.code,
                     quotaName: quota.name,
-                    price: price
+                    price: price,
+                    quantity: quantity,
+                    features: features
                 });
             }
 
@@ -839,6 +886,9 @@
             // 渲染表格
             tableBody.innerHTML = '';
             data.forEach(item => {
+                // 格式化项目特征显示（换行用<br>）
+                const featuresDisplay = item.features.replace(/\n/g, '<br>');
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = '<td>' + item.index + '</td>' +
                     '<td>' + item.listCode + '</td>' +
@@ -849,7 +899,9 @@
                     '<td>' + item.area.toFixed(4) + '</td>' +
                     '<td>' + item.quotaCode + '</td>' +
                     '<td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis;">' + item.quotaName + '</td>' +
-                    '<td>¥' + item.price.toFixed(2) + '</td>';
+                    '<td>¥' + item.price.toFixed(2) + '</td>' +
+                    '<td>' + item.quantity + '</td>' +
+                    '<td style="text-align:left;white-space:pre-line;max-width:300px;">' + featuresDisplay + '</td>';
                 tableBody.appendChild(tr);
             });
 
@@ -878,7 +930,7 @@
 
             // 构建工作表数据
             const wsData = [
-                ['序号', '清单编码', '项目名称', '长度(m)', '宽度(m)', '周长(mm)', '面积(㎡)', '定额编码', '定额名称', '主材价格']
+                ['序号', '清单编码', '项目名称', '长度(m)', '宽度(m)', '周长(mm)', '面积(㎡)', '定额编码', '定额名称', '主材价格', '数量', '项目特征']
             ];
 
             processedData.forEach(item => {
@@ -892,14 +944,16 @@
                     item.area.toFixed(4),
                     item.quotaCode,
                     item.quotaName,
-                    item.price.toFixed(2)
+                    item.price.toFixed(2),
+                    item.quantity,
+                    item.features  // 项目特征使用换行符\n
                 ]);
             });
 
             // 添加统计行
             const totalPrice = processedData.reduce((sum, d) => sum + d.price, 0);
             wsData.push([]);
-            wsData.push(['合计', '', '', '', '', '', '', '', '', totalPrice.toFixed(2)]);
+            wsData.push(['合计', '', '', '', '', '', '', '', '', totalPrice.toFixed(2), '', '']);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
@@ -914,7 +968,9 @@
                 { wch: 10 },  // 面积
                 { wch: 10 },  // 定额编码
                 { wch: 35 },  // 定额名称
-                { wch: 12 }   // 主材价格
+                { wch: 12 },  // 主材价格
+                { wch: 8 },   // 数量
+                { wch: 60 }   // 项目特征
             ];
 
             const wb = XLSX.utils.book_new();
