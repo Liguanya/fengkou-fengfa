@@ -416,26 +416,27 @@
             const hasElectric = fullName.includes('电动');
             
             // ========== 防火阀类（优先级最高，单独处理）==========
-            // 只要包含"防火阀"关键词，统一识别为防火阀类（风阀）
-            if (hasFireValve) {
+            // 只要包含"防火"关键词，统一识别为防火阀类（风阀）
+            // 包含"防火"的关键词：防火阀、防火调节阀、防火止回阀 等
+            if (fullName.includes('防火')) {
                 let category = '防火阀'; // 默认基础防火阀
                 
-                // 判断温度类型
-                if (fullName.includes('280度') || fullName.includes('280°')) {
+                // 判断温度类型（280优先于70）
+                if (fullName.includes('280度') || fullName.includes('280°') || fullName.includes('280度排烟')) {
                     category = '280排烟防火阀';
                 } else if (fullName.includes('70度') || fullName.includes('70°')) {
                     category = '70度防火阀';
                 }
                 
                 // 判断是否电动
-                if (hasElectric) {
+                if (fullName.includes('电动')) {
                     category = '电动' + category;
                 }
                 
                 return {
                     category: category,
                     listCode: FENGFA_CODE,
-                    isElectric: hasElectric
+                    isElectric: fullName.includes('电动')
                 };
             }
             // ========== 防火阀类结束 ==========
@@ -519,7 +520,8 @@
             }
 
             // 默认按风阀处理（排除防火阀后，按名称关键词匹配）
-            if (fullName.includes('阀') && !hasFireValve) {
+            // 注意：包含"防火"的已经上面处理过了，这里用hasFireValve排除
+            if (fullName.includes('阀') && !fullName.includes('防火')) {
                 // 依次检查各类风阀
                 if (fullName.includes('蝶阀')) {
                     return { category: hasElectric ? '电动蝶阀' : '蝶阀', listCode: FENGFA_CODE, isElectric: hasElectric };
