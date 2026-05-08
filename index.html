@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风口风阀清单定额自动编制系统</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .instructions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .instructions ul {
+            color: #666;
+            font-size: 13px;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 50px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 25px;
+        }
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+        .upload-area.dragover {
+            background: #e8eaff;
+            border-color: #764ba2;
+        }
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+        }
+        .upload-hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .file-input {
+            display: none;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .summary-card .number {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .summary-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .hidden {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 22px;
+            }
+            .upload-area {
+                padding: 30px;
+            }
+            table {
+                font-size: 11px;
+            }
+            th, td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌀 风口风阀清单定额自动编制系统</h1>
+            <p>上传工程量清单，自动计算定额与主材价格</p>
+        </div>
+        <div class="content">
+            <div class="instructions">
+                <h3>📋 使用说明</h3>
+                <ul>
+                    <li>上传包含风口、风阀工程量清单的 Excel 文件（支持 .xlsx、.xls 格式）</li>
+                    <li>表格中需包含"名称"列，系统将自动识别产品类型、提取尺寸</li>
+                    <li>系统自动计算周长、面积，套用对应定额，计算主材价格</li>
+                    <li>点击"导出Excel"下载处理后的清单定额报价表</li>
+                    <li>所有数据处理在本地完成，不会上传到任何服务器</li>
+                </ul>
+            </div>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">点击上传或拖拽文件到此处</div>
+                <div class="upload-hint">支持 .xlsx、.xls 格式</div>
+                <input type="file" class="file-input" id="fileInput" accept=".xlsx,.xls">
+            </div>
+
+            <div id="statusArea" class="hidden"></div>
+
+            <div class="summary hidden" id="summaryArea">
+                <div class="summary-card">
+                    <div class="number" id="totalCount">0</div>
+                    <div class="label">总数量</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number" id="fengkouCount">0</div>
+                    <div class="label">风口类</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number" id="fengfaCount">0</div>
+                    <div class="label">风阀类</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number" id="totalPrice">¥0</div>
+                    <div class="label">主材总价</div>
+                </div>
+            </div>
+
+            <div class="btn-group hidden" id="btnGroup">
+                <button class="btn btn-primary" id="exportBtn">📥 导出Excel</button>
+                <button class="btn btn-secondary" id="resetBtn">🔄 重新上传</button>
+            </div>
+
+            <div class="table-container hidden" id="tableContainer">
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>清单编码</th>
+                            <th>项目名称</th>
+                            <th>长度(m)</th>
+                            <th>宽度(m)</th>
+                            <th>周长(mm)</th>
+                            <th>面积(㎡)</th>
+                            <th>定额编码</th>
+                            <th>定额名称</th>
+                            <th>主材价格</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量存储处理后的数据
+        let processedData = [];
+
+        // 上传区域DOM元素
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const statusArea = document.getElementById('statusArea');
+        const summaryArea = document.getElementById('summaryArea');
+        const btnGroup = document.getElementById('btnGroup');
+        const tableContainer = document.getElementById('tableContainer');
+        const tableBody = document.getElementById('tableBody');
+        const exportBtn = document.getElementById('exportBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 拖拽上传事件
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // 重置按钮
+        resetBtn.addEventListener('click', resetPage);
+
+        // 导出按钮
+        exportBtn.addEventListener('click', exportExcel);
+
+        // 处理上传的文件
+        function handleFile(file) {
+            const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+                showStatus('请上传 Excel 文件！', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+                    
+                    if (jsonData.length === 0) {
+                        showStatus('Excel 文件中没有数据！', 'error');
+                        return;
+                    }
+
+                    processedData = processData(jsonData);
+                    displayResults(processedData);
+                    showStatus('成功处理 ' + processedData.length + ' 条数据', 'success');
+                } catch (error) {
+                    showStatus('文件解析失败：' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 数据处理函数
+        function processData(data) {
+            const results = [];
+            let index = 1;
+
+            for (const row of data) {
+                // 查找名称列（支持多种列名）
+                const name = row['名称'] || row['name'] || row['设备名称'] || row['项目名称'] || row['item'] || Object.values(row).find(v => typeof v === 'string' && (v.includes('风口') || v.includes('风阀') || v.includes('阀') || v.includes('散流器')));
+
+                if (!name || typeof name !== 'string') continue;
+
+                // 识别类型
+                const typeInfo = identifyType(name);
+                if (!typeInfo) continue;
+
+                // 提取尺寸
+                const dimensions = extractDimensions(name);
+                
+                // 计算周长和面积
+                const perimeter = calculatePerimeter(dimensions, typeInfo.isCircle);
+                const area = dimensions.length * dimensions.width;
+
+                // 套用定额
+                const quota = applyQuota(perimeter, typeInfo.category, typeInfo.isSquareVent, typeInfo.isRoundVent);
+
+                // 计算主材价
+                const price = calculatePrice(area, typeInfo.category, typeInfo.isElectric);
+
+                results.push({
+                    index: index++,
+                    listCode: typeInfo.listCode,
+                    name: name,
+                    length: dimensions.length,
+                    width: dimensions.width,
+                    perimeter: perimeter,
+                    area: area,
+                    quotaCode: quota.code,
+                    quotaName: quota.name,
+                    price: price
+                });
+            }
+
+            return results;
+        }
+
+        // 识别产品类型
+        function identifyType(name) {
+            const n = name.toLowerCase();
+            const fullName = name;
+
+            // 风口类清单编码
+            const FENGKOU_CODE = '030703007';
+            // 风阀类清单编码
+            const FENGFA_CODE = '030703001';
+
+            // 280度排烟防火阀
+            if (fullName.includes('280度') && (fullName.includes('防火阀') || fullName.includes('排烟'))) {
+                return { 
+                    category: fullName.includes('电动') ? '电动280排烟防火阀' : '280排烟防火阀', 
+                    listCode: FENGFA_CODE,
+                    isElectric: fullName.includes('电动')
+                };
+            }
+
+            // 70度防火阀
+            if (fullName.includes('70度') && fullName.includes('防火阀')) {
+                return { 
+                    category: fullName.includes('电动') ? '电动70度防火阀' : '70度防火阀', 
+                    listCode: FENGFA_CODE,
+                    isElectric: fullName.includes('电动')
+                };
+            }
+
+            // 多叶送风口/排烟口
+            if (fullName.includes('多叶送风口') || fullName.includes('多叶排烟口')) {
+                return { category: '多叶送风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 板式排烟口
+            if (fullName.includes('板式排烟口')) {
+                return { category: '板式排烟口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 对开多叶调节阀
+            if (fullName.includes('对开多叶调节阀')) {
+                return { 
+                    category: fullName.includes('电动') ? '电动对开多叶调节阀' : '对开多叶调节阀', 
+                    listCode: FENGFA_CODE,
+                    isElectric: fullName.includes('电动')
+                };
+            }
+
+            // 三通多叶调节阀
+            if (fullName.includes('三通多叶调节阀')) {
+                return { category: '三通多叶调节阀', listCode: FENGFA_CODE, isElectric: false };
+            }
+
+            // 蝶阀
+            if (fullName.includes('蝶阀')) {
+                return { 
+                    category: fullName.includes('电动') ? '电动蝶阀' : '蝶阀', 
+                    listCode: FENGFA_CODE,
+                    isElectric: fullName.includes('电动')
+                };
+            }
+
+            // 止回阀
+            if (fullName.includes('止回阀')) {
+                return { category: '止回阀', listCode: FENGFA_CODE, isElectric: false };
+            }
+
+            // 防雨百叶风口
+            if (fullName.includes('防雨百叶')) {
+                return { category: '防雨百叶风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 双层百叶风口
+            if (fullName.includes('双层百叶')) {
+                return { category: '双层百叶风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 单层百叶风口
+            if (fullName.includes('单层百叶')) {
+                return { category: '单层百叶风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 电动风口
+            if (fullName.includes('电动风口')) {
+                return { category: '电动风口', listCode: FENGKOU_CODE, isElectric: true };
+            }
+
+            // 门铰式回风口
+            if (fullName.includes('门铰式回风')) {
+                return { category: '门铰式回风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 散流器带调节阀
+            if (fullName.includes('散流器') && fullName.includes('调节阀')) {
+                return { category: '散流器带调节阀', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 散流器
+            if (fullName.includes('散流器')) {
+                return { category: '散流器', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 自垂式百叶风口
+            if (fullName.includes('自垂式百叶')) {
+                return { category: '自垂式百叶风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
+            // 默认按风阀处理（如果包含"阀"字）
+            if (fullName.includes('阀')) {
+                return { category: '蝶阀', listCode: FENGFA_CODE, isElectric: false };
+            }
+
+            // 默认按风口处理
+            return { category: '双层百叶风口', listCode: FENGKOU_CODE, isElectric: false };
+        }
+
+        // 提取尺寸
+        function extractDimensions(name) {
+            let length = 0, width = 0, diameter = 0;
+
+            // 方形：匹配 "长*宽" 或 "长×宽"
+            const squareMatch = name.match(/(\d+)\s*[xX*×]\s*(\d+)/);
+            if (squareMatch) {
+                length = parseInt(squareMatch[2]) / 1000; // 转换为米
+                width = parseInt(squareMatch[1]) / 1000;
+            }
+
+            // 圆形：匹配 "φ直径" 或 "DN直径"
+            const circleMatch = name.match(/[φΦDNdn](\d+)/);
+            if (circleMatch) {
+                diameter = parseInt(circleMatch[1]);
+                length = diameter / 1000;
+                width = diameter / 1000;
+            }
+
+            // 如果没有找到尺寸，设置默认值
+            if (length === 0 && width === 0) {
+                length = 1;
+                width = 1;
+            }
+
+            return { length, width, diameter };
+        }
+
+        // 计算周长
+        function calculatePerimeter(dimensions, isCircle) {
+            if (dimensions.diameter > 0 || isCircle) {
+                // 圆形周长 = π * 直径
+                return Math.PI * (dimensions.diameter || dimensions.length * 1000);
+            } else {
+                // 方形周长 = (长 + 宽) * 2
+                return (dimensions.length + dimensions.width) * 2 * 1000; // 转换为mm
+            }
+        }
+
+        // 套用定额
+        function applyQuota(perimeter, category, isSquareVent, isRoundVent) {
+            const p = perimeter; // 周长(mm)
+
+            // 方形散流器
+            if (isSquareVent) {
+                if (p <= 900) return { code: '9-102', name: '方形散流器安装（周长900mm以内）' };
+                if (p <= 1500) return { code: '9-103', name: '方形散流器安装（周长1500mm以内）' };
+                return { code: '9-104', name: '方形散流器安装（周长1500mm以外）' };
+            }
+
+            // 圆形散流器
+            if (isRoundVent) {
+                if (p <= 900) return { code: '9-105', name: '圆形散流器安装（周长900mm以内）' };
+                if (p <= 1500) return { code: '9-106', name: '圆形散流器安装（周长1500mm以内）' };
+                return { code: '9-107', name: '圆形散流器安装（周长1500mm以外）' };
+            }
+
+            // 风阀类定额（9-57~9-85）
+            if (category.includes('防火阀') || category.includes('排烟') || category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀')) {
+                // 风管蝶阀
+                if (category === '蝶阀' || category === '电动蝶阀') {
+                    if (p <= 800) return { code: '9-63', name: '风管蝶阀安装（周长800mm以内）' };
+                    if (p <= 1500) return { code: '9-64', name: '风管蝶阀安装（周长1500mm以内）' };
+                    if (p <= 2500) return { code: '9-65', name: '风管蝶阀安装（周长2500mm以内）' };
+                    if (p <= 4000) return { code: '9-66', name: '风管蝶阀安装（周长4000mm以内）' };
+                    return { code: '9-67', name: '风管蝶阀安装（周长4000mm以外）' };
+                }
+
+                // 止回阀
+                if (category === '止回阀') {
+                    if (p <= 800) return { code: '9-68', name: '止回阀安装（周长800mm以内）' };
+                    if (p <= 1500) return { code: '9-69', name: '止回阀安装（周长1500mm以内）' };
+                    if (p <= 2500) return { code: '9-70', name: '止回阀安装（周长2500mm以内）' };
+                    if (p <= 4000) return { code: '9-71', name: '止回阀安装（周长4000mm以内）' };
+                    return { code: '9-72', name: '止回阀安装（周长4000mm以外）' };
+                }
+
+                // 对开多叶调节阀
+                if (category === '对开多叶调节阀' || category === '电动对开多叶调节阀') {
+                    if (p <= 1200) return { code: '9-73', name: '对开多叶调节阀安装（周长1200mm以内）' };
+                    if (p <= 2000) return { code: '9-74', name: '对开多叶调节阀安装（周长2000mm以内）' };
+                    if (p <= 3000) return { code: '9-75', name: '对开多叶调节阀安装（周长3000mm以内）' };
+                    if (p <= 4000) return { code: '9-76', name: '对开多叶调节阀安装（周长4000mm以内）' };
+                    return { code: '9-77', name: '对开多叶调节阀安装（周长4000mm以外）' };
+                }
+
+                // 三通多叶调节阀
+                if (category === '三通多叶调节阀') {
+                    if (p <= 1200) return { code: '9-78', name: '三通多叶调节阀安装（周长1200mm以内）' };
+                    if (p <= 2000) return { code: '9-79', name: '三通多叶调节阀安装（周长2000mm以内）' };
+                    if (p <= 3000) return { code: '9-80', name: '三通多叶调节阀安装（周长3000mm以内）' };
+                    return { code: '9-81', name: '三通多叶调节阀安装（周长3000mm以外）' };
+                }
+
+                // 防火阀（70度、280度）
+                if (category.includes('防火阀') || category.includes('排烟防火阀')) {
+                    if (p <= 800) return { code: '9-57', name: '防火阀安装（周长800mm以内）' };
+                    if (p <= 1500) return { code: '9-58', name: '防火阀安装（周长1500mm以内）' };
+                    if (p <= 2500) return { code: '9-59', name: '防火阀安装（周长2500mm以内）' };
+                    if (p <= 4000) return { code: '9-60', name: '防火阀安装（周长4000mm以内）' };
+                    return { code: '9-61', name: '防火阀安装（周长4000mm以外）' };
+                }
+
+                // 电动风阀（作为防火阀的电动款）
+                if (category.includes('电动')) {
+                    return { code: '9-62', name: '电动风阀安装' };
+                }
+
+                // 默认风阀
+                return { code: '9-85', name: '风阀安装' };
+            }
+
+            // 风口类定额（9-86~9-93按周长套用）
+            if (p <= 900) return { code: '9-86', name: '百叶风口安装（周长900mm以内）' };
+            if (p <= 1280) return { code: '9-87', name: '百叶风口安装（周长1280mm以内）' };
+            if (p <= 1800) return { code: '9-88', name: '百叶风口安装（周长1800mm以内）' };
+            if (p <= 2500) return { code: '9-89', name: '百叶风口安装（周长2500mm以内）' };
+            if (p <= 3300) return { code: '9-90', name: '百叶风口安装（周长3300mm以内）' };
+            if (p <= 4800) return { code: '9-91', name: '百叶风口安装（周长4800mm以内）' };
+            if (p <= 6000) return { code: '9-92', name: '百叶风口安装（周长6000mm以内）' };
+            return { code: '9-93', name: '百叶风口安装（周长7000mm以内）' };
+        }
+
+        // 计算主材价
+        function calculatePrice(area, category, isElectric) {
+            const G = area; // 面积(㎡)
+
+            // 70度防火阀类
+            if (category === '70度防火阀') {
+                if (G < 0.5) return (G * 1480 + 220) * 0.5;
+                if (G < 1) return (G * 1418 + 260) * 0.5;
+                return (G * 1380 + 280) * 0.5;
+            }
+
+            // 电动70度防火阀
+            if (category === '电动70度防火阀') {
+                if (G <= 1) return (G * 1418 + 260) * 0.5 + 400;
+                return (G * 1418 + 260) * 0.5 + 1200;
+            }
+
+            // 280度排烟防火阀
+            if (category === '280排烟防火阀') {
+                if (G < 0.5) return (G * 2040 + 312) * 0.5;
+                if (G < 1) return (G * 1800 + 420) * 0.5;
+                return (G * 1620 + 610) * 0.5;
+            }
+
+            // 电动280度排烟防火阀
+            if (category === '电动280排烟防火阀') {
+                if (G <= 1) return (G * 1800 + 420) * 0.5 + 550;
+                return (G * 1620 + 610) * 0.5 + 1200;
+            }
+
+            // 多叶送风口
+            if (category === '多叶送风口') {
+                if (G < 0.5) return (G * 1992 + 696) * 0.5;
+                return (G * 1928 + 728) * 0.5;
+            }
+
+            // 板式排烟口
+            if (category === '板式排烟口') {
+                if (G < 0.5) return (G * 1896 + 660) * 0.5;
+                return (G * 1836 + 696) * 0.5;
+            }
+
+            // 对开多叶调节阀
+            if (category === '对开多叶调节阀') {
+                if (G < 0.5) return (G * 1050 + 120) * 0.5;
+                return (G * 1000 + 100) * 0.5;
+            }
+
+            // 三通多叶调节阀
+            if (category === '三通多叶调节阀') {
+                return (G * 1000 + 100) * 0.5 + 100;
+            }
+
+            // 电动对开多叶调节阀
+            if (category === '电动对开多叶调节阀') {
+                if (G <= 1) return (G * 1992 + 696) * 0.5 + 400;
+                return (G * 1992 + 696) * 0.5 + 1200;
+            }
+
+            // 蝶阀
+            if (category === '蝶阀') {
+                return (G * 950 + 80) * 0.5;
+            }
+
+            // 电动蝶阀
+            if (category === '电动蝶阀') {
+                return (G * 950 + 80) * 0.5 + 200;
+            }
+
+            // 止回阀
+            if (category === '止回阀') {
+                if (G < 1.5) return (G * 1230 + 130) * 0.5;
+                return (G * 1200 + 130) * 0.5;
+            }
+
+            // 防雨百叶风口
+            if (category === '防雨百叶风口') {
+                return (G * 720 + 840) * 0.5;
+            }
+
+            // 双层百叶风口
+            if (category === '双层百叶风口') {
+                return (G * 720 + 72) * 0.5;
+            }
+
+            // 单层百叶风口
+            if (category === '单层百叶风口') {
+                return (G * 660 + 66) * 0.5;
+            }
+
+            // 电动风口
+            if (category === '电动风口') {
+                if (G <= 1) return (G * 660 + 66) * 0.5 + 200;
+                return (G * 660 + 66) * 0.5 + 350;
+            }
+
+            // 门铰式回风口
+            if (category === '门铰式回风口') {
+                return (G * 900 + 96) * 0.5;
+            }
+
+            // 散流器
+            if (category === '散流器') {
+                return (G * 1020 + 96) * 0.5;
+            }
+
+            // 散流器带调节阀
+            if (category === '散流器带调节阀') {
+                return (G * 1020 + 96) * 0.5 * 2.1;
+            }
+
+            // 自垂式百叶风口
+            if (category === '自垂式百叶风口') {
+                return (G * 969 + 66) * 0.5;
+            }
+
+            // 默认价格
+            return (G * 1000 + 100) * 0.5;
+        }
+
+        // 显示状态
+        function showStatus(message, type) {
+            statusArea.className = 'status status-' + type;
+            statusArea.textContent = message;
+            statusArea.classList.remove('hidden');
+        }
+
+        // 显示结果
+        function displayResults(data) {
+            if (data.length === 0) {
+                showStatus('未找到有效的风口或风阀数据！', 'error');
+                return;
+            }
+
+            // 渲染表格
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + item.index + '</td>' +
+                    '<td>' + item.listCode + '</td>' +
+                    '<td style="text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + item.name + '</td>' +
+                    '<td>' + item.length.toFixed(3) + '</td>' +
+                    '<td>' + item.width.toFixed(3) + '</td>' +
+                    '<td>' + Math.round(item.perimeter) + '</td>' +
+                    '<td>' + item.area.toFixed(4) + '</td>' +
+                    '<td>' + item.quotaCode + '</td>' +
+                    '<td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis;">' + item.quotaName + '</td>' +
+                    '<td>¥' + item.price.toFixed(2) + '</td>';
+                tableBody.appendChild(tr);
+            });
+
+            // 统计
+            const fengkouCount = data.filter(d => d.listCode === '030703007').length;
+            const fengfaCount = data.filter(d => d.listCode === '030703001').length;
+            const totalPrice = data.reduce((sum, d) => sum + d.price, 0);
+
+            document.getElementById('totalCount').textContent = data.length;
+            document.getElementById('fengkouCount').textContent = fengkouCount;
+            document.getElementById('fengfaCount').textContent = fengfaCount;
+            document.getElementById('totalPrice').textContent = '¥' + totalPrice.toFixed(2);
+
+            // 显示元素
+            summaryArea.classList.remove('hidden');
+            btnGroup.classList.remove('hidden');
+            tableContainer.classList.remove('hidden');
+        }
+
+        // 导出Excel
+        function exportExcel() {
+            if (processedData.length === 0) {
+                showStatus('没有数据可导出！', 'error');
+                return;
+            }
+
+            // 构建工作表数据
+            const wsData = [
+                ['序号', '清单编码', '项目名称', '长度(m)', '宽度(m)', '周长(mm)', '面积(㎡)', '定额编码', '定额名称', '主材价格']
+            ];
+
+            processedData.forEach(item => {
+                wsData.push([
+                    item.index,
+                    item.listCode,
+                    item.name,
+                    item.length.toFixed(3),
+                    item.width.toFixed(3),
+                    Math.round(item.perimeter),
+                    item.area.toFixed(4),
+                    item.quotaCode,
+                    item.quotaName,
+                    item.price.toFixed(2)
+                ]);
+            });
+
+            // 添加统计行
+            const totalPrice = processedData.reduce((sum, d) => sum + d.price, 0);
+            wsData.push([]);
+            wsData.push(['合计', '', '', '', '', '', '', '', '', totalPrice.toFixed(2)]);
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // 设置列宽
+            ws['!cols'] = [
+                { wch: 6 },   // 序号
+                { wch: 12 },  // 清单编码
+                { wch: 40 },  // 项目名称
+                { wch: 10 },  // 长度
+                { wch: 10 },  // 宽度
+                { wch: 10 },  // 周长
+                { wch: 10 },  // 面积
+                { wch: 10 },  // 定额编码
+                { wch: 35 },  // 定额名称
+                { wch: 12 }   // 主材价格
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '清单定额报价表');
+
+            // 下载文件
+            const fileName = '清单定额报价表_' + new Date().toISOString().slice(0,10) + '.xlsx';
+            XLSX.writeFile(wb, fileName);
+            showStatus('Excel 文件已导出！', 'success');
+        }
+
+        // 重置页面
+        function resetPage() {
+            processedData = [];
+            fileInput.value = '';
+            statusArea.classList.add('hidden');
+            summaryArea.classList.add('hidden');
+            btnGroup.classList.add('hidden');
+            tableContainer.classList.add('hidden');
+            tableBody.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
