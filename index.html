@@ -410,6 +410,9 @@
             const FENGKOU_CODE = '030703007';
             // 风阀类清单编码
             const FENGFA_CODE = '030703001';
+            
+            // 预先检查关键词（用于默认逻辑判断）
+            const hasFireValve = fullName.includes('防火阀');
 
             // 280度排烟防火阀
             if (fullName.includes('280度') && (fullName.includes('防火阀') || fullName.includes('排烟'))) {
@@ -507,8 +510,8 @@
                 return { category: '自垂式百叶风口', listCode: FENGKOU_CODE, isElectric: false };
             }
 
-            // 默认按风阀处理（如果包含"阀"字）
-            if (fullName.includes('阀')) {
+            // 默认按风阀处理（排除已识别的防火阀，避免"阀"字都识别成蝶阀）
+            if (fullName.includes('阀') && !hasFireValve) {
                 return { category: '蝶阀', listCode: FENGFA_CODE, isElectric: false };
             }
 
