@@ -469,9 +469,9 @@
                 let category = '防火阀'; // 默认基础防火阀
                 
                 // 判断温度类型（280优先于70）
-                if (fullName.includes('280度') || fullName.includes('280°') || fullName.includes('280度排烟')) {
+                if (fullName.includes('280度') || fullName.includes('280°') || fullName.includes('280°C') || fullName.includes('280度排烟')) {
                     category = '280排烟防火阀';
-                } else if (fullName.includes('70度') || fullName.includes('70°')) {
+                } else if (fullName.includes('70度') || fullName.includes('70°') || fullName.includes('70°C')) {
                     category = '70度防火阀';
                 }
                 
