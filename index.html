@@ -531,6 +531,16 @@
                 return { category: '带调节阀百叶风口', listCode: FENGKOU_CODE, isElectric: false };
             }
 
+            // 带调节阀/过滤器的圆形风口（9-128~9-135）
+            if ((fullName.includes('圆形风口') || fullName.includes('旋流风口') || fullName.includes('圆形散流器')) && (fullName.includes('带调节阀') || fullName.includes('带过滤器'))) {
+                return { category: '圆形风口带阀', listCode: FENGKOU_CODE, isElectric: false, isRoundVent: true };
+            }
+
+            // 普通圆形风口/旋流风口（9-105~9-107）
+            if (fullName.includes('圆形风口') || fullName.includes('旋流风口') || fullName.includes('圆形散流器')) {
+                return { category: '圆形风口', listCode: FENGKOU_CODE, isElectric: false, isRoundVent: true };
+            }
+
             // 防雨百叶风口
             if (fullName.includes('防雨百叶')) {
                 return { category: '防雨百叶风口', listCode: FENGKOU_CODE, isElectric: false };
@@ -608,8 +618,8 @@
                 width = parseInt(squareMatch[1]) / 1000;
             }
 
-            // 圆形：匹配 "φ直径" 或 "DN直径"
-            const circleMatch = name.match(/[φΦDNdn](\d+)/);
+            // 圆形：匹配 "φ直径"、"D直径"、"DN直径"等格式
+            const circleMatch = name.match(/[φΦDdn](\d+)/i);
             if (circleMatch) {
                 diameter = parseInt(circleMatch[1]);
                 length = diameter / 1000;
@@ -647,8 +657,20 @@
                 return { code: '9-104', name: '方形散流器安装（周长2000mm以内）' };
             }
 
+            // 圆形风口带调节阀/过滤器（9-128~9-135）
+            if (category === '圆形风口带阀') {
+                // 按周长分档：800、1200、1800、2400、3200、4000mm
+                if (p <= 800) return { code: '9-128', name: '带调节阀散流器安装（圆形）（周长800mm以内）' };
+                if (p <= 1200) return { code: '9-129', name: '带调节阀散流器安装（圆形）（周长1200mm以内）' };
+                if (p <= 1800) return { code: '9-130', name: '带调节阀散流器安装（圆形）（周长1800mm以内）' };
+                if (p <= 2400) return { code: '9-131', name: '带调节阀散流器安装（圆形）（周长2400mm以内）' };
+                if (p <= 3200) return { code: '9-132', name: '带调节阀散流器安装（圆形）（周长3200mm以内）' };
+                if (p <= 4000) return { code: '9-133', name: '带调节阀散流器安装（圆形）（周长4000mm以内）' };
+                return { code: '9-134', name: '带调节阀散流器安装（圆形）（周长4000mm以外）' };
+            }
+
             // 圆形散流器（9-105~9-107）- 按直径判断
-            if (isRoundVent) {
+            if (isRoundVent || category === '圆形风口') {
                 // 圆形按直径判断（周长=π*直径，所以直径=周长/π）
                 if (p <= 628) return { code: '9-105', name: '圆形散流器安装（直径200mm以内）' };
                 if (p <= 1131) return { code: '9-106', name: '圆形散流器安装（直径360mm以内）' };
