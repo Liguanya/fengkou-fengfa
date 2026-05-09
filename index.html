@@ -526,6 +526,11 @@
                 return { category: '止回阀', listCode: FENGFA_CODE, isElectric: false };
             }
 
+            // 带调节阀/过滤器百叶风口（9-122~9-127）- 优先级高
+            if (fullName.includes('百叶') && (fullName.includes('带调节阀') || fullName.includes('带过滤器'))) {
+                return { category: '带调节阀百叶风口', listCode: FENGKOU_CODE, isElectric: false };
+            }
+
             // 防雨百叶风口
             if (fullName.includes('防雨百叶')) {
                 return { category: '防雨百叶风口', listCode: FENGKOU_CODE, isElectric: false };
