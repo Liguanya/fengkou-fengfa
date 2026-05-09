@@ -361,7 +361,7 @@
         // 提取数量函数
         function extractQuantity(row) {
             // 可能的数量列名
-            const qtyKeys = ['数量', 'qty', 'num', '数量num', 'NUM', 'QTY', 'Num', 'Qty', '件数', '计量单位', '单位'];
+            const qtyKeys = ['数量', 'qty', 'num', '数量num', 'NUM', 'QTY', 'Num', 'Qty', '件数', '计量单位', '单位', '工程量'];
             
             for (const key of qtyKeys) {
                 if (row[key] !== undefined && row[key] !== '' && row[key] !== null) {
@@ -375,7 +375,7 @@
             // 尝试模糊匹配
             for (const key of Object.keys(row)) {
                 const k = key.toLowerCase();
-                if (k.includes('数量') || k === 'qty' || k === 'num' || k === 'n') {
+                if (k.includes('数量') || k.includes('工程量') || k === 'qty' || k === 'num' || k === 'n') {
                     const val = parseFloat(row[key]);
                     if (!isNaN(val) && val > 0) {
                         return val;
