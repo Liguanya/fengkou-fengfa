@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>风口风阀清单定额自动编制系统</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -543,16 +543,39 @@
             const n = name.toLowerCase();
             const fullName = name;
 
-            // 风口类清单编码
+            // ========== 防火阀类清单编码 ==========
             const FENGKOU_CODE = '030703007';
-            // 风阀类清单编码
             const FENGFA_CODE = '030703001';
             
-            // 预先检查关键词（用于默认逻辑判断）
-            const hasFireValve = fullName.includes('防火阀');
-            const hasElectric = fullName.includes('电动');
-            
-            // ========== 防火阀类（优先级最高，单独处理）==========
+            // ========== 排烟防火阀（包含"排烟"两个字节，优先级最高，优先于普通防火阀）==========
+            // 当识别到名称中包含"排烟"两个字节时，按照280度排烟防火阀对应逻辑套用
+            if (fullName.includes('排烟') && fullName.includes('防火')) {
+                let category = '280排烟防火阀';
+                if (fullName.includes('电动')) {
+                    category = '电动280排烟防火阀';
+                }
+                return {
+                    category: category,
+                    listCode: FENGFA_CODE,
+                    isElectric: fullName.includes('电动')
+                };
+            }
+            // ========== 排烟防火阀类结束 ==========
+
+            // ========== 定风量阀（包含"定风量"三个字节，优先级高）==========
+            // 清单套用030703001碳钢阀门，定额与对开多叶调节阀类型套用一致（9-76至9-81）
+            // 主材价按照对应尺寸的对开多叶调节阀价格的4倍计入
+            if (fullName.includes('定风量')) {
+                return {
+                    category: '定风量阀',
+                    listCode: FENGFA_CODE,
+                    isElectric: false,
+                    isDingFengLiang: true // 特殊标记，用于价格计算
+                };
+            }
+            // ========== 定风量阀类结束 ==========
+
+            // ========== 防火阀类（优先级高）==========
             // 只要包含"防火"关键词，统一识别为防火阀类（风阀）
             // 包含"防火"的关键词：防火阀、防火调节阀、防火止回阀 等
             if (fullName.includes('防火')) {
@@ -577,6 +600,10 @@
                 };
             }
             // ========== 防火阀类结束 ==========
+
+            // 预先检查关键词（用于默认逻辑判断）
+            const hasFireValve = fullName.includes('防火阀');
+            const hasElectric = fullName.includes('电动');
 
             // 多叶送风口/排烟口
             if (fullName.includes('多叶送风口') || fullName.includes('多叶排烟口')) {
@@ -811,6 +838,18 @@
             }
             // ========== 防火阀类定额结束 ==========
 
+            // ========== 定风量阀定额（与对开多叶调节阀一致，9-76~9-81）==========
+            // 清单套用030703001碳钢阀门，定额与对开多叶调节阀类型套用一致
+            if (category === '定风量阀') {
+                if (p <= 2800) return { code: '9-76', name: '对开多叶调节阀安装（周长2800mm以内）' };
+                if (p <= 4000) return { code: '9-77', name: '对开多叶调节阀安装（周长4000mm以内）' };
+                if (p <= 5200) return { code: '9-78', name: '对开多叶调节阀安装（周长5200mm以内）' };
+                if (p <= 6500) return { code: '9-79', name: '对开多叶调节阀安装（周长6500mm以内）' };
+                if (p <= 8000) return { code: '9-80', name: '对开多叶调节阀安装（周长8000mm以内）' };
+                return { code: '9-81', name: '对开多叶调节阀安装（周长10000mm以内）' };
+            }
+            // ========== 定风量阀定额结束 ==========
+
             // 风阀类定额（排除防火阀后）
             if (category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀') || category.includes('斜插板阀')) {
                 // 风管蝶阀（9-63~9-67）
@@ -874,6 +913,16 @@
         }
         function calculatePrice(area, category, isElectric) {
             const G = area; // 面积(㎡)
+
+            // ========== 定风量阀价格（4倍对开多叶调节阀价格）==========
+            // 主材价按照对应尺寸的对开多叶调节阀价格的4倍计入
+            // 小于0.5㎡：价格=(面积*1050+120)*0.5*4
+            // 大于等于0.5㎡：价格=(面积*1000+100)*0.5*4
+            if (category === '定风量阀') {
+                if (G < 0.5) return (G * 1050 + 120) * 0.5 * 4;
+                return (G * 1000 + 100) * 0.5 * 4;
+            }
+            // ========== 定风量阀价格结束 ==========
 
             // 70度防火阀类
             if (category === '70度防火阀') {
