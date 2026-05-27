@@ -541,12 +541,22 @@
             const n = name.toLowerCase();
             const fullName = name;
 
-            // ========== 防火阀类清单编码 ==========
+            // ========== 清单编码定义 ==========
             const FENGKOU_CODE = '030703007';
             const FENGFA_CODE = '030703001';
             
-            // ========== 排烟防火阀（包含"排烟"两个字节，优先级最高，优先于普通防火阀）==========
-            // 当识别到名称中包含"排烟"两个字节时，按照280度排烟防火阀对应逻辑套用
+            // ========== 防火风口（"防火"+"风口"同时出现，优先级高）==========
+            // 修正：防火风口应按风口处理，不应识别为防火阀
+            if (fullName.includes('防火') && fullName.includes('风口')) {
+                return {
+                    category: '防火风口',
+                    listCode: FENGKOU_CODE,
+                    isElectric: fullName.includes('电动')
+                };
+            }
+            // ========== 防火风口结束 ==========
+
+            // ========== 排烟防火阀（包含"排烟"两个字节，优先级高）==========
             if (fullName.includes('排烟') && fullName.includes('防火')) {
                 let category = '280排烟防火阀';
                 if (fullName.includes('电动')) {
@@ -560,33 +570,49 @@
             }
             // ========== 排烟防火阀类结束 ==========
 
+            // ========== 人防密闭阀门（包含"密闭"关键词）==========
+            // 清单套用030703001碳钢阀门，定额9-423至9-429
+            if (fullName.includes('密闭')) {
+                return {
+                    category: '密闭阀门',
+                    listCode: FENGFA_CODE,
+                    isElectric: false
+                };
+            }
+            // ========== 密闭阀门结束 ==========
+
+            // ========== 超压排气阀门（包含"超压排气"关键词）==========
+            // 清单套用030703001碳钢阀门，定额9-420
+            if (fullName.includes('超压排气')) {
+                return {
+                    category: '超压排气阀门',
+                    listCode: FENGFA_CODE,
+                    isElectric: false
+                };
+            }
+            // ========== 超压排气阀门结束 ==========
+
             // ========== 定风量阀（包含"定风量"三个字节，优先级高）==========
-            // 清单套用030703001碳钢阀门，定额与对开多叶调节阀类型套用一致（9-76至9-81）
-            // 主材价按照对应尺寸的对开多叶调节阀价格的4倍计入
             if (fullName.includes('定风量')) {
                 return {
                     category: '定风量阀',
                     listCode: FENGFA_CODE,
                     isElectric: false,
-                    isDingFengLiang: true // 特殊标记，用于价格计算
+                    isDingFengLiang: true
                 };
             }
             // ========== 定风量阀类结束 ==========
 
-            // ========== 防火阀类（优先级高）==========
-            // 只要包含"防火"关键词，统一识别为防火阀类（风阀）
-            // 包含"防火"的关键词：防火阀、防火调节阀、防火止回阀 等
-            if (fullName.includes('防火')) {
-                let category = '防火阀'; // 默认基础防火阀
+            // ========== 防火阀类（优先级高，但不包含"风口"）==========
+            if (fullName.includes('防火') && !fullName.includes('风口')) {
+                let category = '防火阀';
                 
-                // 判断温度类型（280优先于70）
                 if (fullName.includes('280度') || fullName.includes('280°') || fullName.includes('280°C') || fullName.includes('280℃') || fullName.includes('280度排烟')) {
                     category = '280排烟防火阀';
                 } else if (fullName.includes('70度') || fullName.includes('70°') || fullName.includes('70°C') || fullName.includes('70℃')) {
                     category = '70度防火阀';
                 }
                 
-                // 判断是否电动
                 if (fullName.includes('电动')) {
                     category = '电动' + category;
                 }
@@ -599,7 +625,7 @@
             }
             // ========== 防火阀类结束 ==========
 
-            // 预先检查关键词（用于默认逻辑判断）
+            // 预先检查关键词
             const hasFireValve = fullName.includes('防火阀');
             const hasElectric = fullName.includes('电动');
 
@@ -845,6 +871,26 @@
             }
             // ========== 防火阀类定额结束 ==========
 
+            // ========== 超压排气阀门定额（9-420，固定直径250）==========
+            if (category === '超压排气阀门') {
+                return { code: '9-420', name: '通风管道超压排气阀门安装（直径250）' };
+            }
+            // ========== 超压排气阀门定额结束 ==========
+
+            // ========== 密闭阀门定额（9-423~9-429，按直径分档）==========
+            // 周长转直径：直径 = 周长 / π
+            if (category === '密闭阀门') {
+                const diameter = p / Math.PI; // 从周长计算直径
+                if (diameter <= 200) return { code: '9-423', name: '通风管道手动密闭阀门安装（直径200mm以内）' };
+                if (diameter <= 300) return { code: '9-424', name: '通风管道手动密闭阀门安装（直径300mm以内）' };
+                if (diameter <= 400) return { code: '9-425', name: '通风管道手动密闭阀门安装（直径400mm以内）' };
+                if (diameter <= 500) return { code: '9-426', name: '通风管道手动密闭阀门安装（直径500mm以内）' };
+                if (diameter <= 600) return { code: '9-427', name: '通风管道手动密闭阀门安装（直径600mm以内）' };
+                if (diameter <= 800) return { code: '9-428', name: '通风管道手动密闭阀门安装（直径800mm以内）' };
+                return { code: '9-429', name: '通风管道手动密闭阀门安装（直径1000mm以内）' };
+            }
+            // ========== 密闭阀门定额结束 ==========
+
             // ========== 定风量阀定额（与对开多叶调节阀一致，9-76~9-81）==========
             // 清单套用030703001碳钢阀门，定额与对开多叶调节阀类型套用一致
             if (category === '定风量阀') {
@@ -856,6 +902,19 @@
                 return { code: '9-81', name: '对开多叶调节阀安装（周长10000mm以内）' };
             }
             // ========== 定风量阀定额结束 ==========
+
+            // ========== 防火风口定额（按单层百叶风口套用，9-86~9-93）==========
+            if (category === '防火风口') {
+                if (p <= 900) return { code: '9-86', name: '百叶风口安装（周长900mm以内）' };
+                if (p <= 1280) return { code: '9-87', name: '百叶风口安装（周长1280mm以内）' };
+                if (p <= 1800) return { code: '9-88', name: '百叶风口安装（周长1800mm以内）' };
+                if (p <= 2500) return { code: '9-89', name: '百叶风口安装（周长2500mm以内）' };
+                if (p <= 3300) return { code: '9-90', name: '百叶风口安装（周长3300mm以内）' };
+                if (p <= 4800) return { code: '9-91', name: '百叶风口安装（周长4800mm以内）' };
+                if (p <= 6000) return { code: '9-92', name: '百叶风口安装（周长6000mm以内）' };
+                return { code: '9-93', name: '百叶风口安装（周长7000mm以内）' };
+            }
+            // ========== 防火风口定额结束 ==========
 
             // 风阀类定额（排除防火阀后）
             if (category.includes('调节阀') || category.includes('蝶阀') || category.includes('止回阀') || category.includes('斜插板阀')) {
@@ -920,6 +979,25 @@
         }
         function calculatePrice(area, category, isElectric) {
             const G = area; // 面积(㎡)
+
+            // ========== 防火风口价格（按单层百叶风口计算）==========
+            if (category === '防火风口') {
+                return (G * 660 + 66) * 0.5;
+            }
+            // ========== 防火风口价格结束 ==========
+
+            // ========== 超压排气阀门价格 ==========
+            if (category === '超压排气阀门') {
+                // 固定直径250，面积约0.049㎡
+                return (G * 800 + 80) * 0.5;
+            }
+            // ========== 超压排气阀门价格结束 ==========
+
+            // ========== 密闭阀门价格 ==========
+            if (category === '密闭阀门') {
+                return (G * 1200 + 120) * 0.5;
+            }
+            // ========== 密闭阀门价格结束 ==========
 
             // ========== 定风量阀价格（4倍对开多叶调节阀价格）==========
             // 主材价按照对应尺寸的对开多叶调节阀价格的4倍计入
