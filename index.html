@@ -728,15 +728,24 @@
         function extractDimensions(name) {
             let length = 0, width = 0, diameter = 0;
 
-            // 方形：匹配 "长*宽" 或 "长×宽"
-            const squareMatch = name.match(/(\d+)\s*[xX*×]\s*(\d+)/);
+            // ========== 处理括号内的加法 ==========
+            // 如 800X(1000+800) -> 800*1800
+            let processedName = name;
+            const bracketPattern = /\((\d+)\+(\d+)\)/g;
+            processedName = processedName.replace(bracketPattern, function(match, a, b) {
+                return String(parseInt(a) + parseInt(b));
+            });
+            // ========== 括号处理结束 ==========
+
+            // 方形：匹配 "长*宽" 或 "长×宽"，支持 x、X、*、× 四种符号
+            const squareMatch = processedName.match(/(\d+)\s*[xX*×]\s*(\d+)/);
             if (squareMatch) {
                 length = parseInt(squareMatch[2]) / 1000; // 转换为米
                 width = parseInt(squareMatch[1]) / 1000;
             }
 
             // 圆形：匹配 "φ直径"、"D直径"、"DN直径"等格式
-            const circleMatch = name.match(/[φΦDdn](\d+)/i);
+            const circleMatch = processedName.match(/[φΦDdn](\d+)/i);
             if (circleMatch) {
                 diameter = parseInt(circleMatch[1]);
                 length = diameter / 1000;
