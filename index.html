@@ -448,11 +448,11 @@
                 const firstWorkContent = isElectric ? '1.本体及执行器购置、安装' : '1.购置、安装';
                 
                 if (isFengkou) {
-                    // 风口类项目特征
-                    return '项目特征:\n1.项目名称（如' + name + '）\n2.其他详见招标文件、设计图纸及相关规范\n\n工程内容:\n' + firstWorkContent + '\n2.参照图纸及招标文件的技术要求\n3.满足施工及验收相关规范要求\n4.为完成该项工作内容所需的辅助工作请投标人在综合单价中考虑，达到竣工交验标准';
+                    // 风口类项目特征 - 第一条直接显示产品名称
+                    return '项目特征:\n1.' + name + '\n2.其他详见招标文件、设计图纸及相关规范\n\n工程内容:\n' + firstWorkContent + '\n2.参照图纸及招标文件的技术要求\n3.满足施工及验收相关规范要求\n4.为完成该项工作内容所需的辅助工作请投标人在综合单价中考虑，达到竣工交验标准';
                 } else {
-                    // 风阀类项目特征
-                    return '项目特征:\n1.项目名称（如' + name + '）\n2.其他详见招标文件、设计图纸及相关规范\n\n工程内容:\n' + firstWorkContent + '\n2.支吊架制作、安装\n3.除锈、刷油\n4.参照图纸及招标文件的技术要求\n5.满足施工及验收相关规范要求\n6.为完成该项工作内容所需的辅助工作请投标人在综合单价中考虑，达到竣工交验标准';
+                    // 风阀类项目特征 - 第一条直接显示产品名称
+                    return '项目特征:\n1.' + name + '\n2.其他详见招标文件、设计图纸及相关规范\n\n工程内容:\n' + firstWorkContent + '\n2.支吊架制作、安装\n3.除锈、刷油\n4.参照图纸及招标文件的技术要求\n5.满足施工及验收相关规范要求\n6.为完成该项工作内容所需的辅助工作请投标人在综合单价中考虑，达到竣工交验标准';
                 }
             }
         }
@@ -1146,6 +1146,15 @@
                     { wch: 8 },   // G: 数量
                     { wch: 60 }   // H: 项目特征
                 ];
+
+                // 设置H列（项目特征）自动换行
+                const rowHeight = [];
+                processedData.forEach((item, idx) => {
+                    // 统计项目特征换行数，设置合适行高
+                    const lines = (item.features.match(/\n/g) || []).length + 1;
+                    rowHeight.push({ hpt: Math.max(lines * 15, 45) }); // 每行15pt，最小45pt
+                });
+                ws['!rows'] = rowHeight;
 
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, '清单定额报价表');
