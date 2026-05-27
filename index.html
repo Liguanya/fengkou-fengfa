@@ -1093,19 +1093,63 @@
         }
 
         // 导出Excel
-        // 导出Excel - 新格式：每项清单输出三行
-        // 导出Excel - 新格式：每项清单输出三行
         function exportExcel() {
             if (processedData.length === 0) {
                 showStatus('没有数据可导出！', 'error');
                 return;
             }
 
-            // 构建工作表数据 - 15列格式
-            // A:序号 | B:项目名称 | C:类型 | D:长度(m) | E:宽度(m) | F:周长mm | G:面积㎡ | H:工程量 | I:项目编码 | J:类型 | K:名称 | L:项目特征 | M:单位 | N:工程量 | O:主材单价
-            const wsData = [
-                ['序号', '项目名称', '类型', '长度(m)', '宽度(m)', '周长mm', '面积㎡', '工程量', '项目编码', '类型', '名称', '项目特征', '单位', '工程量', '主材单价']
-            ];
+            if (currentSoftware === 'jianjing') {
+                // ========== 建经科技导出格式（单行结构）==========
+                // A序号 B清单编码 C项目名称 D定额编码 E定额名称 F主材价格 G数量 H项目特征
+                const wsData = [
+                    ['序号', '清单编码', '项目名称', '定额编码', '定额名称', '主材价格', '数量', '项目特征']
+                ];
+
+                processedData.forEach((item) => {
+                    wsData.push([
+                        item.index,                           // A: 序号
+                        item.listCode,                       // B: 清单编码
+                        item.name,                           // C: 项目名称
+                        item.quotaCode,                      // D: 定额编码
+                        item.quotaName,                      // E: 定额名称
+                        item.price.toFixed(2),              // F: 主材价格
+                        item.quantity,                       // G: 数量
+                        item.features                        // H: 项目特征
+                    ]);
+                });
+
+                // 添加统计行
+                const totalPrice = processedData.reduce((sum, d) => sum + d.price, 0);
+                wsData.push([]);
+                wsData.push(['合计', '', '', '', '', totalPrice.toFixed(2), '', '']);
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+                // 设置列宽
+                ws['!cols'] = [
+                    { wch: 8 },    // A: 序号
+                    { wch: 14 },  // B: 清单编码
+                    { wch: 35 },  // C: 项目名称
+                    { wch: 10 },  // D: 定额编码
+                    { wch: 30 },  // E: 定额名称
+                    { wch: 12 },  // F: 主材价格
+                    { wch: 8 },   // G: 数量
+                    { wch: 60 }   // H: 项目特征
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, '清单定额报价表');
+
+                const fileName = '清单定额报价表_建经_' + new Date().toISOString().slice(0,10) + '.xlsx';
+                XLSX.writeFile(wb, fileName);
+                showStatus('建经科技Excel 文件已导出！', 'success');
+            } else {
+                // ========== 广联达导出格式（三行结构）==========
+                // A:序号 | B:项目名称 | C:类型 | D:长度(m) | E:宽度(m) | F:周长mm | G:面积㎡ | H:工程量 | I:项目编码 | J:类型 | K:名称 | L:项目特征 | M:单位 | N:工程量 | O:主材单价
+                const wsData = [
+                    ['序号', '项目名称', '类型', '长度(m)', '宽度(m)', '周长mm', '面积㎡', '工程量', '项目编码', '类型', '名称', '项目特征', '单位', '工程量', '主材单价']
+                ];
 
             let unpricedIndex = 1; // 未计价材序号，从1开始
 
@@ -1209,9 +1253,10 @@
             XLSX.utils.book_append_sheet(wb, ws, '清单定额报价表');
 
             // 下载文件
-            const fileName = '清单定额报价表_' + new Date().toISOString().slice(0,10) + '.xlsx';
+            const fileName = '清单定额报价表_广联达_' + new Date().toISOString().slice(0,10) + '.xlsx';
             XLSX.writeFile(wb, fileName);
-            showStatus('Excel 文件已导出！', 'success');
+            showStatus('广联达Excel 文件已导出！', 'success');
+            }
         }
 
         // 重置页面
