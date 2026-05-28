@@ -482,7 +482,7 @@
 
             for (const row of data) {
                 // 查找名称列（支持多种列名）
-                const name = row['名称'] || row['name'] || row['设备名称'] || row['项目名称'] || row['item'] || Object.values(row).find(v => typeof v === 'string' && (v.includes('风口') || v.includes('风阀') || v.includes('阀') || v.includes('散流器')));
+                const name = row['名称'] || row['name'] || row['设备名称'] || row['项目名称'] || row['item'] || Object.values(row).find(v => typeof v === 'string' && (v.includes('风口') || v.includes('风阀') || v.includes('阀') || v.includes('散流器') || v.includes('静压箱')));
 
                 if (!name || typeof name !== 'string') continue;
 
@@ -494,8 +494,24 @@
                 const dimensions = extractDimensions(name);
                 
                 // 计算周长和面积
-                const perimeter = calculatePerimeter(dimensions, typeInfo.isCircle);
-                const area = dimensions.length * dimensions.width;
+                let perimeter = calculatePerimeter(dimensions, typeInfo.isCircle);
+                let area = dimensions.length * dimensions.width;
+                
+                // 静压箱特殊处理
+                let jingyaxiangArea = undefined; // 截面积（宽*高）
+                let jingyaxiangSurfaceArea = undefined; // 展开面积
+                
+                if (typeInfo.category === '静压箱' && dimensions.height > 0) {
+                    // 静压箱截面积 = 宽 * 高（用于套用定额）
+                    jingyaxiangArea = dimensions.width * dimensions.height;
+                    // 静压箱展开面积 = (长*宽 + 宽*高 + 高*长) * 2
+                    jingyaxiangSurfaceArea = (dimensions.length * dimensions.width + dimensions.width * dimensions.height + dimensions.height * dimensions.length) * 2;
+                    // 静压箱主材价按展开面积计算
+                    area = jingyaxiangSurfaceArea;
+                    // 设置全局变量供applyQuota和calculatePrice使用
+                    window.jingyaxiangArea = jingyaxiangArea;
+                    window.jingyaxiangSurfaceArea = jingyaxiangSurfaceArea;
+                }
 
                 // 套用定额
                 const quota = applyQuota(perimeter, typeInfo.category, typeInfo.isSquareVent, typeInfo.isRoundVent);
@@ -510,6 +526,9 @@
                 let specStr = '';
                 if (dimensions.diameter > 0) {
                     specStr = 'φ' + Math.round(dimensions.diameter) + 'mm';
+                } else if (typeInfo.category === '静压箱' && dimensions.height > 0) {
+                    // 静压箱显示长*宽*高
+                    specStr = Math.round(dimensions.length * 1000) + '*' + Math.round(dimensions.width * 1000) + '*' + Math.round(dimensions.height * 1000) + 'mm';
                 } else {
                     specStr = Math.round(dimensions.length * 1000) + '*' + Math.round(dimensions.width * 1000) + 'mm';
                 }
@@ -523,6 +542,7 @@
                     name: name,
                     length: dimensions.length,
                     width: dimensions.width,
+                    height: dimensions.height || 0,
                     perimeter: perimeter,
                     area: area,
                     quotaCode: quota.code,
@@ -544,6 +564,19 @@
             // ========== 清单编码定义 ==========
             const FENGKOU_CODE = '030703007';
             const FENGFA_CODE = '030703001';
+            const JINGYAXIANG_CODE = '030703021';
+            
+            // ========== 静压箱（包含"静压箱"字节，优先级高）==========
+            // 清单套用030703021静压箱
+            if (fullName.includes('静压箱')) {
+                return {
+                    category: '静压箱',
+                    listCode: JINGYAXIANG_CODE,
+                    isElectric: false,
+                    isJingYaXiang: true
+                };
+            }
+            // ========== 静压箱结束 ==========
             
             // ========== 防火风口（"防火"+"风口"同时出现，优先级高）==========
             // 修正：防火风口应按风口处理，不应识别为防火阀
@@ -750,7 +783,7 @@
 
         // 提取尺寸
         function extractDimensions(name) {
-            let length = 0, width = 0, diameter = 0;
+            let length = 0, width = 0, diameter = 0, height = 0;
 
             // ========== 处理括号内的加法 ==========
             // 如 800X(1000+800) -> 800*1800
@@ -760,6 +793,18 @@
                 return String(parseInt(a) + parseInt(b));
             });
             // ========== 括号处理结束 ==========
+
+            // ========== 静压箱三维尺寸：长*宽*高 ==========
+            // 如 1200*400*250
+            const threeDMatch = processedName.match(/(\d+)\s*[xX*×]\s*(\d+)\s*[xX*×]\s*(\d+)/);
+            if (threeDMatch) {
+                // 长、宽、高，单位mm，转换为m
+                length = parseInt(threeDMatch[1]) / 1000;
+                width = parseInt(threeDMatch[2]) / 1000;
+                height = parseInt(threeDMatch[3]) / 1000;
+                return { length, width, diameter, height };
+            }
+            // ========== 三维尺寸处理结束 ==========
 
             // 方形：匹配 "长*宽" 或 "长×宽"，支持 x、X、*、× 四种符号
             const squareMatch = processedName.match(/(\d+)\s*[xX*×]\s*(\d+)/);
@@ -782,7 +827,7 @@
                 width = 1;
             }
 
-            return { length, width, diameter };
+            return { length, width, diameter, height };
         }
 
         // 计算周长
@@ -967,6 +1012,20 @@
                 return { code: '9-85', name: '风阀安装（周长8000mm以内）' };
             }
 
+            // ========== 静压箱定额（9-213~9-215，按截面积=宽*高分档）==========
+            // 静压箱需要传入额外的截面积参数，这里通过全局变量传递
+            if (category === '静压箱' && typeof jingyaxiangArea !== 'undefined') {
+                const crossArea = jingyaxiangArea; // 截面积=宽*高(㎡)
+                if (crossArea <= 0.8) return { code: '9-213', name: '消声静压箱安装（截面积0.8㎡以内）' };
+                if (crossArea <= 3.5) return { code: '9-214', name: '消声静压箱安装（截面积3.5㎡以内）' };
+                return { code: '9-215', name: '消声静压箱安装（截面积3.5㎡以外）' };
+            }
+            // 如果静压箱没有截面积信息，按默认处理
+            if (category === '静压箱') {
+                return { code: '9-214', name: '消声静压箱安装（截面积3.5㎡以内）' };
+            }
+            // ========== 静压箱定额结束 ==========
+
             // 风口类定额（9-86~9-93按周长套用）
             if (p <= 900) return { code: '9-86', name: '百叶风口安装（周长900mm以内）' };
             if (p <= 1280) return { code: '9-87', name: '百叶风口安装（周长1280mm以内）' };
@@ -979,6 +1038,14 @@
         }
         function calculatePrice(area, category, isElectric) {
             const G = area; // 面积(㎡)
+
+            // ========== 静压箱价格 ==========
+            // 静压箱面积 = (长*宽 + 宽*高 + 高*长) * 2
+            // 主材费 = 面积 * 480 * 0.5
+            if (category === '静压箱' && typeof jingyaxiangSurfaceArea !== 'undefined') {
+                return jingyaxiangSurfaceArea * 480 * 0.5;
+            }
+            // ========== 静压箱价格结束 ==========
 
             // ========== 防火风口价格（按单层百叶风口计算）==========
             if (category === '防火风口') {
