@@ -512,6 +512,17 @@
                     window.jingyaxiangArea = jingyaxiangArea;
                     window.jingyaxiangSurfaceArea = jingyaxiangSurfaceArea;
                 }
+                
+                // 消声器特殊处理
+                let xiaoShengQiPerimeter = undefined; // 周长（长+宽）*2
+                if (typeInfo.category === '消声器' && dimensions.length > 0 && dimensions.width > 0) {
+                    // 消声器周长 = (长 + 宽) * 2（单位mm）
+                    xiaoShengQiPerimeter = (dimensions.length + dimensions.width) * 2 * 1000;
+                    // 消声器周长用于套用定额和计算主材价
+                    window.xiaoShengQiPerimeter = xiaoShengQiPerimeter;
+                    // 消声器子类型用于套用不同定额
+                    window.xiaoShengQiSubType = typeInfo.xiaoShengQiSubType;
+                }
 
                 // 套用定额
                 const quota = applyQuota(perimeter, typeInfo.category, typeInfo.isSquareVent, typeInfo.isRoundVent);
@@ -565,6 +576,7 @@
             const FENGKOU_CODE = '030703007';
             const FENGFA_CODE = '030703001';
             const JINGYAXIANG_CODE = '030703021';
+            const XIAOSHENGQI_CODE = '030703020';
             
             // ========== 静压箱（包含"静压箱"字节，优先级高）==========
             // 清单套用030703021静压箱
@@ -577,6 +589,27 @@
                 };
             }
             // ========== 静压箱结束 ==========
+            
+            // ========== 消声器（包含"消声器"字节）==========
+            // 清单套用030703020消声器
+            if (fullName.includes('消声器')) {
+                let subType = '消声器'; // 默认类型
+                if (fullName.includes('微穿孔板消声器')) {
+                    subType = '微穿孔板消声器';
+                } else if (fullName.includes('阻抗式消声器')) {
+                    subType = '阻抗式消声器';
+                } else if (fullName.includes('管式消声器')) {
+                    subType = '管式消声器';
+                }
+                return {
+                    category: '消声器',
+                    listCode: XIAOSHENGQI_CODE,
+                    isElectric: false,
+                    isXiaoShengQi: true,
+                    xiaoShengQiSubType: subType
+                };
+            }
+            // ========== 消声器结束 ==========
             
             // ========== 防火风口（"防火"+"风口"同时出现，优先级高）==========
             // 修正：防火风口应按风口处理，不应识别为防火阀
@@ -1025,6 +1058,54 @@
                 return { code: '9-214', name: '消声静压箱安装（截面积3.5㎡以内）' };
             }
             // ========== 静压箱定额结束 ==========
+            
+            // ========== 消声器定额（按周长分档）==========
+            if (category === '消声器' && typeof xiaoShengQiPerimeter !== 'undefined') {
+                const subType = typeof xiaoShengQiSubType !== 'undefined' ? xiaoShengQiSubType : '消声器';
+                const p = xiaoShengQiPerimeter; // 周长(mm)
+                
+                if (subType === '微穿孔板消声器') {
+                    // 9-190~9-195：周长1800~6000mm
+                    if (p <= 1800) return { code: '9-190', name: '微穿孔板消声器安装（周长1800mm以内）' };
+                    if (p <= 2800) return { code: '9-191', name: '微穿孔板消声器安装（周长2800mm以内）' };
+                    if (p <= 3800) return { code: '9-192', name: '微穿孔板消声器安装（周长3800mm以内）' };
+                    if (p <= 4800) return { code: '9-193', name: '微穿孔板消声器安装（周长4800mm以内）' };
+                    if (p <= 6000) return { code: '9-194', name: '微穿孔板消声器安装（周长6000mm以内）' };
+                    return { code: '9-195', name: '微穿孔板消声器安装（周长6000mm以外）' };
+                }
+                
+                if (subType === '阻抗式消声器') {
+                    // 9-196~9-200：周长2200~5800mm
+                    if (p <= 2200) return { code: '9-196', name: '阻抗式消声器安装（周长2200mm以内）' };
+                    if (p <= 3000) return { code: '9-197', name: '阻抗式消声器安装（周长3000mm以内）' };
+                    if (p <= 3800) return { code: '9-198', name: '阻抗式消声器安装（周长3800mm以内）' };
+                    if (p <= 4800) return { code: '9-199', name: '阻抗式消声器安装（周长4800mm以内）' };
+                    if (p <= 5800) return { code: '9-200', name: '阻抗式消声器安装（周长5800mm以内）' };
+                    return { code: '9-200', name: '阻抗式消声器安装（周长5800mm以外）' };
+                }
+                
+                if (subType === '管式消声器') {
+                    // 9-201~9-204：周长1280~4000mm
+                    if (p <= 1280) return { code: '9-201', name: '管式消声器安装（周长1280mm以内）' };
+                    if (p <= 2000) return { code: '9-202', name: '管式消声器安装（周长2000mm以内）' };
+                    if (p <= 3000) return { code: '9-203', name: '管式消声器安装（周长3000mm以内）' };
+                    if (p <= 4000) return { code: '9-204', name: '管式消声器安装（周长4000mm以内）' };
+                    return { code: '9-204', name: '管式消声器安装（周长4000mm以外）' };
+                }
+                
+                // 默认消声器按微穿孔板处理
+                if (p <= 1800) return { code: '9-190', name: '微穿孔板消声器安装（周长1800mm以内）' };
+                if (p <= 2800) return { code: '9-191', name: '微穿孔板消声器安装（周长2800mm以内）' };
+                if (p <= 3800) return { code: '9-192', name: '微穿孔板消声器安装（周长3800mm以内）' };
+                if (p <= 4800) return { code: '9-193', name: '微穿孔板消声器安装（周长4800mm以内）' };
+                if (p <= 6000) return { code: '9-194', name: '微穿孔板消声器安装（周长6000mm以内）' };
+                return { code: '9-195', name: '微穿孔板消声器安装（周长6000mm以外）' };
+            }
+            // 如果消声器没有周长信息，按默认处理
+            if (category === '消声器') {
+                return { code: '9-192', name: '微穿孔板消声器安装（周长3800mm以内）' };
+            }
+            // ========== 消声器定额结束 ==========
 
             // 风口类定额（9-86~9-93按周长套用）
             if (p <= 900) return { code: '9-86', name: '百叶风口安装（周长900mm以内）' };
@@ -1046,6 +1127,14 @@
                 return jingyaxiangSurfaceArea * 480 * 0.5;
             }
             // ========== 静压箱价格结束 ==========
+            
+            // ========== 消声器价格 ==========
+            // 消声器周长 = (长+宽)*2（单位mm）
+            // 主材费 = 周长 * 580 * 0.5
+            if (category === '消声器' && typeof xiaoShengQiPerimeter !== 'undefined') {
+                return xiaoShengQiPerimeter * 580 * 0.5;
+            }
+            // ========== 消声器价格结束 ==========
 
             // ========== 防火风口价格（按单层百叶风口计算）==========
             if (category === '防火风口') {
@@ -1436,3 +1525,4 @@
     </script>
 </body>
 </html>
+
