@@ -1129,10 +1129,10 @@
             // ========== 静压箱价格结束 ==========
             
             // ========== 消声器价格 ==========
-            // 消声器周长 = (长+宽)*2（单位mm）
-            // 主材费 = 周长 * 580 * 0.5
+            // 消声器周长 = (长+宽)*2（单位m）
+            // 主材费 = 周长(m) * 1000 * 580 * 0.5（将m转为mm后计算）
             if (category === '消声器' && typeof xiaoShengQiPerimeter !== 'undefined') {
-                return xiaoShengQiPerimeter * 580 * 0.5;
+                return xiaoShengQiPerimeter * 1000 * 580 * 0.5;
             }
             // ========== 消声器价格结束 ==========
 
@@ -1525,4 +1525,5 @@
     </script>
 </body>
 </html>
+
 
