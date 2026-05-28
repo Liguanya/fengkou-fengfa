@@ -514,12 +514,12 @@
                 }
                 
                 // 消声器特殊处理
-                let xiaoShengQiPerimeter = undefined; // 周长（长+宽）*2
+                let xiaoShengQiPerimeter = undefined; // 周长（长+宽）*2，单位m（用于价格计算）
                 if (typeInfo.category === '消声器' && dimensions.length > 0 && dimensions.width > 0) {
-                    // 消声器周长 = (长 + 宽) * 2（单位mm）
-                    xiaoShengQiPerimeter = (dimensions.length + dimensions.width) * 2 * 1000;
-                    // 消声器周长用于套用定额和计算主材价
-                    window.xiaoShengQiPerimeter = xiaoShengQiPerimeter;
+                    // 消声器周长 = (长 + 宽) * 2（单位m，用于价格计算）
+                    xiaoShengQiPerimeter = (dimensions.length + dimensions.width) * 2;
+                    // 消声器周长mm用于套用定额
+                    window.xiaoShengQiPerimeter = xiaoShengQiPerimeter * 1000;
                     // 消声器子类型用于套用不同定额
                     window.xiaoShengQiSubType = typeInfo.xiaoShengQiSubType;
                 }
