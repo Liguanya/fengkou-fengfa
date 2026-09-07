@@ -432,13 +432,17 @@
             const isElectric = name.includes('电动');
             
             if (currentSoftware === 'guanglianda') {
-                // 广联达格式
-                let feature = '名称: ' + name + '\n规格型号: ' + specStr;
+                // 广联达格式（带序号）
+                const lines = [];
+                lines.push('1.名称: ' + name);
+                lines.push('2.规格型号: ' + specStr);
+                let seq = 3;
                 if (isElectric) {
-                    feature += '\n工作内容: 本体及执行器采购安装';
+                    lines.push(seq + '.工作内容: 本体及执行器采购安装');
+                    seq++;
                 }
-                feature += '\n其他: 满足招标图纸、招标文件、技术标准及相关图集规范要求';
-                return feature;
+                lines.push(seq + '.其他: 满足招标图纸、招标文件、技术标准及相关图集规范要求');
+                return lines.join('\n');
             } else {
                 // 建经科技格式
                 // 判断是风口还是风阀
