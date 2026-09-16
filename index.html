@@ -855,10 +855,11 @@
             // ========== 三维尺寸处理结束 ==========
 
             // 方形：匹配 "长*宽" 或 "长×宽"，支持 x、X、*、× 四种符号
+            // 第1个数字为长，第2个数字为宽，与名称顺序保持一致（1600*800 -> 长1600 宽800）
             const squareMatch = processedName.match(/(\d+)\s*[xX*×]\s*(\d+)/);
             if (squareMatch) {
-                length = parseInt(squareMatch[2]) / 1000; // 转换为米
-                width = parseInt(squareMatch[1]) / 1000;
+                length = parseInt(squareMatch[1]) / 1000; // 转换为米，长取第1个数字
+                width = parseInt(squareMatch[2]) / 1000;  // 宽取第2个数字
             }
 
             // 圆形：匹配 "φ直径"、"D直径"、"DN直径"等格式
@@ -1478,7 +1479,7 @@
                     '',                                  // [7] H: 留空
                     quotaCode,                          // [8] I: 定额编码（如9-82）
                     '定额行',                            // [9] J: 类型（固定）
-                    item.name,                           // [10] K: 名称
+                    item.quotaName,                      // [10] K: 定额名称（如'70℃防火阀 周长1200mm以内'）
                     '',                                  // [11] L: 留空
                     '个',                                // [12] M: 单位（每行都填）
                     item.quantity,                        // [13] N: 直接填H列工程量数值
